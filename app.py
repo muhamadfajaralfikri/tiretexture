@@ -2,7 +2,6 @@ import streamlit as st
 import tensorflow as tf
 from PIL import Image
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 
 # Set direktori kerja dan path model
@@ -21,17 +20,19 @@ def preprocess_image(image):
     img = image.resize((224, 224))  
     img_array = np.array(img) / 255.0  # Normalisasi nilai piksel
     
-    # Jika model menerima gambar RGB, pastikan gambar tetap dalam format RGB
+    # Periksa apakah gambar grayscale atau berwarna
     if img_array.ndim == 2:  # Jika gambar grayscale
-        img_array = np.stack([img_array]*3, axis=-1)  # Mengulang saluran untuk menjadikannya RGB
+        img_array = img_array[..., np.newaxis]  # Tambahkan dimensi channel
+    elif img_array.shape[-1] == 3:  # Jika gambar berwarna (RGB), konversi ke grayscale
+        img_array = np.mean(img_array, axis=-1, keepdims=True)  # Menghitung rata-rata untuk menghasilkan 1 channel
     
     # Ubah bentuk menjadi format yang dibutuhkan model
-    img_array = img_array.reshape((1, 224, 224, 3))  # Tambahkan dimensi batch
+    img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
     return img_array
 
 # Fungsi untuk memotong bagian ban (contoh sederhana)
 def crop_tire(image):
-    # Misalnya, crop bagian tengah gambar yang berukuran 200x200 piksel
+    # Misalnya, crop bagian tengah gambar yang berukuran 200x200 piksel (disesuaikan dengan kebutuhan)
     width, height = image.size
     left = width // 4
     top = height // 4
@@ -41,19 +42,6 @@ def crop_tire(image):
     # Potong gambar untuk hanya mencakup area ban
     cropped_image = image.crop((left, top, right, bottom))
     return cropped_image
-
-# Fungsi untuk menampilkan grafik probabilitas
-def plot_confidence_chart(normal_confidence, cracked_confidence):
-    categories = ['Normal', 'Cracked']
-    probabilities = [normal_confidence, cracked_confidence]
-    
-    fig, ax = plt.subplots()
-    ax.bar(categories, probabilities, color=['green', 'red'])
-    ax.set_ylim(0, 100)
-    ax.set_ylabel('Confidence (%)')
-    ax.set_title('Confidence for Each Class')
-
-    st.pyplot(fig)
 
 # Aplikasi Streamlit
 st.title('Klasifikasi Tekstur Ban')
@@ -106,9 +94,6 @@ if uploaded_image is not None:
                 else:
                     st.markdown(f"<h3 style='color:red;'>Kepercayaan untuk 'normal': {normal_confidence:.2f}%</h3>", unsafe_allow_html=True)
                     st.markdown(f"<h3 style='color:green;'>Kepercayaan untuk 'cracked': {cracked_confidence:.2f}%</h3>", unsafe_allow_html=True)
-
-                # Menampilkan grafik batang untuk kepercayaan
-                plot_confidence_chart(normal_confidence, cracked_confidence)
 
                 # Tampilkan pesan berdasarkan kepercayaan
                 if result[0][predicted_class] > 0.7:
