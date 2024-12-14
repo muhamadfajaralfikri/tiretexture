@@ -16,18 +16,21 @@ class_names = ['normal', 'cracked']
 
 # Fungsi untuk memproses gambar yang diunggah
 def preprocess_image(image):
-    img = image.resize((224, 224))  # Ubah ukuran untuk mencocokkan input model
+    # Ubah ukuran gambar untuk mencocokkan input model
+    img = image.resize((224, 224))  
     img_array = np.array(img) / 255.0  # Normalisasi nilai piksel
     
     # Periksa apakah gambar grayscale atau berwarna
-    if img_array.ndim == 2:  # Gambar grayscale
+    if img_array.ndim == 2:  # Jika gambar grayscale
         img_array = img_array[..., np.newaxis]  # Tambahkan dimensi channel
-        img_array = np.repeat(img_array, 3, axis=-1)  # Ubah ke RGB dengan mengulang nilai grayscale
-    elif img_array.shape[-1] == 3:  # Gambar berwarna (RGB)
-        pass  # Tidak perlu diubah jika sudah RGB
+        img_array = np.repeat(img_array, 3, axis=-1)  # Ubah menjadi RGB dengan mengulang grayscale
+    elif img_array.shape[-1] == 1:  # Jika hanya memiliki 1 channel (misalnya, grayscale)
+        img_array = np.repeat(img_array, 3, axis=-1)  # Ubah menjadi RGB
+    elif img_array.shape[-1] != 3:  # Pastikan gambar berwarna RGB
+        raise ValueError("Gambar harus memiliki 3 saluran warna (RGB).")
     
-    # Ubah bentuk untuk menambahkan dimensi batch
-    img_array = img_array.reshape((1, 224, 224, 3))  # Tambahkan dimensi batch untuk prediksi
+    # Ubah bentuk menjadi format yang dibutuhkan model
+    img_array = img_array.reshape((1, 224, 224, 3))  # Tambahkan dimensi batch
     return img_array
 
 # Aplikasi Streamlit
@@ -49,13 +52,16 @@ if uploaded_image is not None:
     # Tombol klasifikasi dan tampilan hasil
     with col2:
         if st.button('Klasifikasi'):
-            # Proses gambar yang diunggah
-            img_array = preprocess_image(image)
+            try:
+                # Proses gambar yang diunggah
+                img_array = preprocess_image(image)
 
-            # Lakukan prediksi menggunakan model yang telah dilatih
-            result = model.predict(img_array)
-            predicted_class = np.argmax(result)
-            prediction = class_names[predicted_class]
+                # Lakukan prediksi menggunakan model yang telah dilatih
+                result = model.predict(img_array)
+                predicted_class = np.argmax(result)
+                prediction = class_names[predicted_class]
 
-            # Tampilkan hasil prediksi
-            st.success(f'Prediksi: {prediction}')
+                # Tampilkan hasil prediksi
+                st.success(f'Prediksi: {prediction}')
+            except Exception as e:
+                st.error(f"Terjadi kesalahan: {e}")
