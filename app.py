@@ -1,5 +1,4 @@
 import streamlit as st
-import cv2
 import tensorflow as tf
 from PIL import Image
 import numpy as np
@@ -15,43 +14,22 @@ model = tf.keras.models.load_model(model_path)
 # Tentukan nama kelas (sesuaikan dengan pelatihan model)
 class_names = ['normal', 'cracked']
 
-# Muat konfigurasi YOLO dan bobot pre-trained
-yolo_net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
-layer_names = yolo_net.getLayerNames()
-output_layers = [layer_names[i - 1] for i in yolo_net.getUnconnectedOutLayers()]
+# Muat model deteksi objek EfficientDet
+detector_model = tf.saved_model.load("efficientdet_model/saved_model")  # Ganti dengan path model EfficientDet
 
-# Fungsi untuk deteksi objek dengan YOLO
-def detect_tire_yolo(image):
-    # Mengubah gambar menjadi format yang dapat digunakan oleh YOLO
-    blob = cv2.dnn.blobFromImage(np.array(image), 0.00392, (416, 416), (0, 0, 0), True, crop=False)
-    yolo_net.setInput(blob)
-    detections = yolo_net.forward(output_layers)
-    
-    # Loop untuk mendeteksi objek
-    height, width, _ = image.shape
-    boxes = []
-    confidences = []
-    class_ids = []
+# Fungsi untuk deteksi objek dengan EfficientDet
+def detect_objects(image):
+    input_tensor = tf.convert_to_tensor(image)
+    input_tensor = input_tensor[tf.newaxis,...]
+    model_fn = detector_model.signatures['serving_default']
+    output_dict = model_fn(input_tensor)
 
-    for detection in detections:
-        for obj in detection:
-            scores = obj[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-            if confidence > 0.5:  # Threshold deteksi
-                center_x = int(obj[0] * width)
-                center_y = int(obj[1] * height)
-                w = int(obj[2] * width)
-                h = int(obj[3] * height)
-                
-                # Batas kotak deteksi
-                x = int(center_x - w / 2)
-                y = int(center_y - h / 2)
-                boxes.append([x, y, w, h])
-                confidences.append(float(confidence))
-                class_ids.append(class_id)
+    # Ambil hasil deteksi
+    boxes = output_dict['detection_boxes'][0].numpy()
+    class_ids = output_dict['detection_classes'][0].numpy().astype(int)
+    scores = output_dict['detection_scores'][0].numpy()
 
-    return boxes, confidences, class_ids
+    return boxes, class_ids, scores
 
 # Fungsi untuk memproses gambar yang diunggah
 def preprocess_image(image):
@@ -74,12 +52,22 @@ if uploaded_image is not None:
     image = Image.open(uploaded_image)
     image_np = np.array(image)
 
-    # Deteksi ban menggunakan YOLO
-    boxes, confidences, class_ids = detect_tire_yolo(image_np)
-    
-    # Pilih kotak deteksi pertama yang paling relevan (asumsi hanya ada satu ban)
-    if len(boxes) > 0:
-        x, y, w, h = boxes[0]
+    # Deteksi objek menggunakan EfficientDet
+    boxes, class_ids, scores = detect_objects(image_np)
+
+    # Filter deteksi objek untuk ban (misalnya, ID kelas ban = 1)
+    tire_boxes = []
+    for i in range(len(scores)):
+        if scores[i] > 0.5 and class_ids[i] == 1:  # Deteksi ban dengan skor > 0.5
+            box = boxes[i]
+            ymin, xmin, ymax, xmax = box
+            x, y, w, h = int(xmin * image_np.shape[1]), int(ymin * image_np.shape[0]), \
+                          int((xmax - xmin) * image_np.shape[1]), int((ymax - ymin) * image_np.shape[0])
+            tire_boxes.append((x, y, w, h))
+
+    # Jika ditemukan kotak deteksi ban
+    if len(tire_boxes) > 0:
+        x, y, w, h = tire_boxes[0]
         cropped_image = image.crop((x, y, x + w, y + h))  # Potong gambar sesuai dengan hasil deteksi
 
         # Tampilkan gambar yang dipotong
