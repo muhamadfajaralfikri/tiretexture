@@ -55,7 +55,13 @@ if uploaded_image is not None:
 
                 # Lakukan prediksi menggunakan model yang telah dilatih
                 result = model.predict(img_array)
-                predicted_class = np.argmax(result)  # Kelas dengan probabilitas tertinggi
+                
+                # Periksa bentuk output model
+                if result.shape[-1] == 1:  # Jika model hanya mengeluarkan satu output (binary classification)
+                    result = np.hstack([1 - result, result])  # Buat dua kelas (normal vs cracked)
+                
+                # Ambil kelas dengan probabilitas tertinggi
+                predicted_class = np.argmax(result)
                 prediction = class_names[predicted_class]
 
                 # Tampilkan hasil prediksi
