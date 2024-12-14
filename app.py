@@ -29,11 +29,11 @@ def preprocess_image(image):
         # Periksa apakah gambar grayscale atau berwarna
         if img_array.ndim == 2:  # Jika gambar grayscale
             img_array = img_array[..., np.newaxis]  # Tambahkan dimensi channel
-        elif img_array.shape[-1] == 3:  # Jika gambar berwarna (RGB), konversi ke grayscale
-            img_array = np.mean(img_array, axis=-1, keepdims=True)  # Menghitung rata-rata untuk menghasilkan 1 channel
+        elif img_array.shape[-1] == 3:  # Jika gambar berwarna (RGB), gunakan langsung
+            pass  # Tidak perlu konversi
 
         # Ubah bentuk menjadi format yang dibutuhkan model
-        img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
+        img_array = img_array.reshape((1, 224, 224, img_array.shape[-1]))  # Tambahkan dimensi batch
         return img_array
     except Exception as e:
         st.error(f"Gagal memproses gambar: {e}")
@@ -64,7 +64,8 @@ if uploaded_image is not None:
 
                 if img_array is not None:
                     # Debugging dimensi input dan model
-                   
+                    st.text(f"Expected input shape: {model.input_shape}")
+                    st.text(f"Provided input shape: {img_array.shape}")
 
                     # Lakukan prediksi menggunakan model yang telah dilatih
                     result = model.predict(img_array)
