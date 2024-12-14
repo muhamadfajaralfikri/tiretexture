@@ -26,12 +26,11 @@ def preprocess_image(image):
         img = image.resize((224, 224))
         img_array = np.array(img) / 255.0  # Normalisasi nilai piksel
 
-        # Ubah gambar menjadi grayscale jika diperlukan
-        if img_array.ndim == 3 and img_array.shape[-1] == 3:  # Jika gambar RGB
-            img_array = np.mean(img_array, axis=-1)  # Konversi ke grayscale
-
-        # Tambahkan dimensi channel agar sesuai dengan input model
-        img_array = img_array[..., np.newaxis]
+        # Periksa apakah gambar grayscale atau berwarna
+        if img_array.ndim == 2:  # Jika gambar grayscale
+            img_array = img_array[..., np.newaxis]  # Tambahkan dimensi channel
+        elif img_array.shape[-1] == 3:  # Jika gambar berwarna (RGB), konversi ke grayscale
+            img_array = np.mean(img_array, axis=-1, keepdims=True)  # Menghitung rata-rata untuk menghasilkan 1 channel
 
         # Ubah bentuk menjadi format yang dibutuhkan model
         img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
@@ -47,7 +46,7 @@ uploaded_image = st.file_uploader("Unggah gambar (lebih baik resolusi rendah)", 
 
 if uploaded_image is not None:
     # Buka gambar yang diunggah
-    image = Image.open(uploaded_image).convert('RGB')  # Pastikan gambar dibuka dalam format RGB
+    image = Image.open(uploaded_image)
 
     # Tampilkan gambar yang diunggah
     col1, col2 = st.columns(2)
@@ -65,7 +64,7 @@ if uploaded_image is not None:
 
                 if img_array is not None:
                     # Debugging dimensi input dan model
-                  
+                   
 
                     # Lakukan prediksi menggunakan model yang telah dilatih
                     result = model.predict(img_array)
