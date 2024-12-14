@@ -17,7 +17,7 @@ class_names = ['normal', 'cracked']
 # Muat model deteksi objek (pretrained MobileNetV2 untuk klasifikasi dasar)
 detection_model = tf.keras.applications.MobileNetV2(weights='imagenet')
 
-def is_tire(image):
+def is_tire(image, confidence_threshold=0.8):
     """
     Fungsi untuk memeriksa apakah gambar yang diunggah adalah gambar ban.
     """
@@ -32,10 +32,10 @@ def is_tire(image):
 
     # Cari label yang relevan dengan "ban"
     for _, label, confidence in decoded_predictions[0]:
-        if 'tire' in label.lower() or 'wheel' in label.lower():
-            return True  # Gambar diterima jika ada label "tire" atau "wheel"
+        if ('tire' in label.lower() or 'wheel' in label.lower()) and confidence >= confidence_threshold:
+            return True  # Gambar diterima jika ada label "tire" atau "wheel" dengan confidence cukup tinggi
 
-    return False  # Jika tidak ditemukan label yang relevan
+    return False  # Jika tidak ditemukan label yang relevan atau confidence rendah
 
 # Fungsi untuk memproses gambar yang diunggah
 def preprocess_image(image):
@@ -65,6 +65,11 @@ if uploaded_image is not None:
     # Validasi gambar apakah gambar ban atau bukan
     if not is_tire(image):
         st.error("Gambar yang diunggah bukan gambar ban. Harap unggah gambar ban yang valid.")
+        # Tambahkan prediksi detail untuk debugging
+        img_array = np.expand_dims(np.array(image.resize((224, 224))) / 255.0, axis=0)
+        predictions = detection_model.predict(img_array)
+        decoded_predictions = tf.keras.applications.mobilenet_v2.decode_predictions(predictions, top=5)
+        st.write("Prediksi lengkap:", decoded_predictions[0])
     else:
         # Tampilkan gambar yang diunggah
         col1, col2 = st.columns(2)
