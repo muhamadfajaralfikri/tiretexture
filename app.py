@@ -33,7 +33,7 @@ def preprocess_image(image):
             img_array = np.mean(img_array, axis=-1, keepdims=True)  # Menghitung rata-rata untuk menghasilkan 1 channel
 
         # Ubah bentuk menjadi format yang dibutuhkan model
-        img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
+        # img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
         return img_array
     except Exception as e:
         st.error(f"Gagal memproses gambar: {e}")
