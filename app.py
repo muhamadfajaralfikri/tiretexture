@@ -26,14 +26,15 @@ def preprocess_image(image):
         img = image.resize((224, 224))
         img_array = np.array(img) / 255.0  # Normalisasi nilai piksel
 
-        # Pastikan gambar memiliki 3 saluran warna (RGB)
-        if img_array.ndim == 2:  # Jika gambar grayscale
-            img_array = np.stack([img_array] * 3, axis=-1)  # Konversi ke RGB
-        elif img_array.shape[-1] != 3:
-            raise ValueError("Gambar tidak memiliki format saluran warna yang didukung.")
+        # Ubah gambar menjadi grayscale jika diperlukan
+        if img_array.ndim == 3 and img_array.shape[-1] == 3:  # Jika gambar RGB
+            img_array = np.mean(img_array, axis=-1)  # Konversi ke grayscale
+
+        # Tambahkan dimensi channel agar sesuai dengan input model
+        img_array = img_array[..., np.newaxis]
 
         # Ubah bentuk menjadi format yang dibutuhkan model
-        img_array = img_array.reshape((1, 224, 224, 3))  # Tambahkan dimensi batch
+        img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
         return img_array
     except Exception as e:
         st.error(f"Gagal memproses gambar: {e}")
