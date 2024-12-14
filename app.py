@@ -68,8 +68,16 @@ if uploaded_image is not None:
                 st.success(f'Prediksi: {prediction}')
                 
                 # Tampilkan kepercayaan atau probabilitas untuk setiap kelas
-                st.write(f"Kepercayaan untuk 'normal': {result[0][0]*100:.2f}%")
-                st.write(f"Kepercayaan untuk 'cracked': {result[0][1]*100:.2f}%")
+                normal_confidence = result[0][0] * 100
+                cracked_confidence = result[0][1] * 100
+
+                # Menampilkan kepercayaan dengan warna yang sesuai
+                if prediction == 'normal':
+                    st.markdown(f"<h3 style='color:green;'>Kepercayaan untuk 'normal': {normal_confidence:.2f}%</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<h3 style='color:red;'>Kepercayaan untuk 'cracked': {cracked_confidence:.2f}%</h3>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<h3 style='color:red;'>Kepercayaan untuk 'normal': {normal_confidence:.2f}%</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<h3 style='color:green;'>Kepercayaan untuk 'cracked': {cracked_confidence:.2f}%</h3>", unsafe_allow_html=True)
 
                 # Tampilkan pesan berdasarkan kepercayaan
                 if result[0][predicted_class] > 0.7:
