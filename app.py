@@ -4,68 +4,73 @@ from PIL import Image
 import numpy as np
 import os
 
-# Set direktori kerja dan path model
+# Set working directory and model path
 working_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(working_dir, 'cnn_model.keras')
 
-# Muat model yang sudah dilatih
+# Check if model exists
+if not os.path.exists(model_path):
+    st.error("Model file not found. Please ensure 'cnn_model_cracked.keras' is in the working directory.")
+    st.stop()
+
+# Load the pre-trained model
 model = tf.keras.models.load_model(model_path)
 
-# Tentukan nama kelas (sesuaikan dengan pelatihan model)
+# Define class names (update as per model training)
 class_names = ['normal', 'cracked']
 
-# Fungsi untuk memproses gambar yang diunggah
+# Function to preprocess the uploaded image
 def preprocess_image(image):
-    # Ubah ukuran gambar untuk mencocokkan input model
+    # Resize to model's expected input size
     img = image.resize((224, 224))  
-    img_array = np.array(img) / 255.0  # Normalisasi nilai piksel
+    img_array = np.array(img) / 255.0  # Normalize pixel values
+
+    if img_array.ndim == 2:  # Grayscale image
+        img_array = img_array[..., np.newaxis]  # Add channel dimension
+        img_array = np.repeat(img_array, 3, axis=-1)  # Repeat channels for RGB
+    elif img_array.shape[-1] != 3:  # Ensure RGB input
+        st.error("Unsupported image format. Please upload a valid RGB or grayscale image.")
+        st.stop()
     
-    # Periksa apakah gambar grayscale atau berwarna
-    if img_array.ndim == 2:  # Jika gambar grayscale
-        img_array = img_array[..., np.newaxis]  # Tambahkan dimensi channel
-        img_array = np.repeat(img_array, 3, axis=-1)  # Ubah menjadi RGB dengan mengulang grayscale
-    elif img_array.shape[-1] == 1:  # Jika hanya memiliki 1 channel (misalnya, grayscale)
-        img_array = np.repeat(img_array, 3, axis=-1)  # Ubah menjadi RGB
-    elif img_array.shape[-1] != 3:  # Pastikan gambar berwarna RGB
-        raise ValueError("Gambar harus memiliki 3 saluran warna (RGB).")
-    
-    # Ubah bentuk menjadi format yang dibutuhkan model
-    img_array = img_array.reshape((1, 224, 224, 3))  # Tambahkan dimensi batch
+    # Reshape to add batch dimension
+    img_array = img_array.reshape((1, 224, 224, 3))  
     return img_array
 
-# Aplikasi Streamlit
-st.title('Klasifikasi Tekstur Ban')
+# Streamlit App
+st.title('Tire Texture Classifier')
 
-uploaded_image = st.file_uploader("Unggah gambar (lebih baik resolusi rendah)", type=["jpg", "jpeg", "png"])
+uploaded_image = st.file_uploader("Upload an image (preferably low resolution)", type=["jpg", "jpeg", "png"])
 
 if uploaded_image is not None:
-    # Buka gambar yang diunggah
+    # Open the uploaded image
     image = Image.open(uploaded_image)
 
-    # Tampilkan gambar yang diunggah
+    # Display the uploaded image
     col1, col2 = st.columns(2)
 
     with col1:
-        resized_img = image.resize((224, 224))  # Tampilkan versi yang lebih besar
-        st.image(resized_img, caption="Gambar yang Diupload", use_column_width=True)
+        resized_img = image.resize((224, 224))
+        st.image(resized_img, caption="Uploaded Image", use_column_width=True)
 
-    # Tombol klasifikasi dan tampilan hasil
+    # Classify button and result display
     with col2:
-        if st.button('Klasifikasi'):
+        if st.button('Classify'):
             try:
-                # Proses gambar yang diunggah
+                # Preprocess the uploaded image
                 img_array = preprocess_image(image)
 
-                # Lakukan prediksi menggunakan model yang telah dilatih
+                # Make a prediction using the pre-trained model
                 result = model.predict(img_array)
                 predicted_class = np.argmax(result)
                 prediction = class_names[predicted_class]
 
-                # Tampilkan hasil prediksi
-                st.success(f'Prediksi: {prediction}')
-                st.write(f"Kepercayaan: {result[0][predicted_class]:.2f}")
+                # Display the prediction
+                if prediction == 'cracked':
+                    st.warning("Warning: The tire may be damaged! Please inspect it further for safety.")
+                else:
+                    st.success("The tire texture appears to be normal.")
 
-            except ValueError as ve:
-                st.error(f"Terjadi kesalahan pada gambar: {ve}")
+                st.write(f'Prediction Confidence: {result[0][predicted_class]:.2f}')
+
             except Exception as e:
-                st.error(f"Terjadi kesalahan yang tidak terduga: {e}")
+                st.error(f"An error occurred during prediction: {e}")
