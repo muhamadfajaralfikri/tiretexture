@@ -21,19 +21,17 @@ def preprocess_image(image):
     img = image.resize((224, 224))  
     img_array = np.array(img) / 255.0  # Normalisasi nilai piksel
     
-    # Periksa apakah gambar grayscale atau berwarna
+    # Jika model menerima gambar RGB, pastikan gambar tetap dalam format RGB
     if img_array.ndim == 2:  # Jika gambar grayscale
-        img_array = img_array[..., np.newaxis]  # Tambahkan dimensi channel
-    elif img_array.shape[-1] == 3:  # Jika gambar berwarna (RGB), konversi ke grayscale
-        img_array = np.mean(img_array, axis=-1, keepdims=True)  # Menghitung rata-rata untuk menghasilkan 1 channel
+        img_array = np.stack([img_array]*3, axis=-1)  # Mengulang saluran untuk menjadikannya RGB
     
     # Ubah bentuk menjadi format yang dibutuhkan model
-    img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
+    img_array = img_array.reshape((1, 224, 224, 3))  # Tambahkan dimensi batch
     return img_array
 
 # Fungsi untuk memotong bagian ban (contoh sederhana)
 def crop_tire(image):
-    # Misalnya, crop bagian tengah gambar yang berukuran 200x200 piksel (disesuaikan dengan kebutuhan)
+    # Misalnya, crop bagian tengah gambar yang berukuran 200x200 piksel
     width, height = image.size
     left = width // 4
     top = height // 4
