@@ -34,7 +34,7 @@ def preprocess_image(image):
 
         # Ubah bentuk menjadi format yang dibutuhkan model
         # img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
-        return img_array
+        # return img_array
     except Exception as e:
         st.error(f"Gagal memproses gambar: {e}")
         return None
