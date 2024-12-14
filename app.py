@@ -46,8 +46,8 @@ if uploaded_image is not None:
     col1, col2 = st.columns(2)
 
     with col1:
-        resized_img = image.resize((100, 100))  # Tampilkan versi kecil
-        st.image(resized_img, caption="Gambar yang Diupload")
+        resized_img = image.resize((224, 224))  # Tampilkan versi yang lebih besar
+        st.image(resized_img, caption="Gambar yang Diupload", use_column_width=True)
 
     # Tombol klasifikasi dan tampilan hasil
     with col2:
@@ -63,5 +63,9 @@ if uploaded_image is not None:
 
                 # Tampilkan hasil prediksi
                 st.success(f'Prediksi: {prediction}')
+                st.write(f"Kepercayaan: {result[0][predicted_class]:.2f}")
+
+            except ValueError as ve:
+                st.error(f"Terjadi kesalahan pada gambar: {ve}")
             except Exception as e:
-                st.error(f"Terjadi kesalahan: {e}")
+                st.error(f"Terjadi kesalahan yang tidak terduga: {e}")
