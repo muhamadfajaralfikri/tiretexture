@@ -64,8 +64,7 @@ if uploaded_image is not None:
 
                 if img_array is not None:
                     # Debugging dimensi input dan model
-                    st.text(f"Expected input shape: {model.input_shape}")
-                    st.text(f"Provided input shape: {img_array.shape}")
+                   
 
                     # Lakukan prediksi menggunakan model yang telah dilatih
                     result = model.predict(img_array)
