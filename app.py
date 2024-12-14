@@ -27,7 +27,7 @@ def preprocess_image(image):
         img_array = np.mean(img_array, axis=-1, keepdims=True)  # Menghitung rata-rata untuk menghasilkan 1 channel
     
     # Ubah bentuk menjadi format yang dibutuhkan model
-    img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch dan pastikan 1 channel
+    img_array = img_array.reshape((1, 224, 224, 1))  # Tambahkan dimensi batch
     return img_array
 
 # Aplikasi Streamlit
@@ -55,12 +55,21 @@ if uploaded_image is not None:
 
                 # Lakukan prediksi menggunakan model yang telah dilatih
                 result = model.predict(img_array)
-                predicted_class = np.argmax(result)
+                predicted_class = np.argmax(result)  # Kelas dengan probabilitas tertinggi
                 prediction = class_names[predicted_class]
 
                 # Tampilkan hasil prediksi
                 st.success(f'Prediksi: {prediction}')
-                st.write(f"Kepercayaan: {result[0][predicted_class]:.2f}")
+                
+                # Tampilkan kepercayaan atau probabilitas untuk setiap kelas
+                st.write(f"Kepercayaan untuk 'normal': {result[0][0]*100:.2f}%")
+                st.write(f"Kepercayaan untuk 'cracked': {result[0][1]*100:.2f}%")
+
+                # Tampilkan pesan berdasarkan kepercayaan
+                if result[0][predicted_class] > 0.7:
+                    st.success("Model sangat yakin dengan prediksinya!")
+                else:
+                    st.warning("Model tidak terlalu yakin dengan prediksinya, harap cek kembali!")
 
             except ValueError as ve:
                 st.error(f"Terjadi kesalahan pada gambar: {ve}")
